@@ -6,8 +6,8 @@ contents of a named file and pushes it back over the same connection. Currently 
 `HTTP/1.1` are supported.
 
 ### How it works
-The client will open a TCP connection to the server. The client will issue a request such as `GET /index.html HTTP/1.1`  
-with an appropriate `Host:` header. The server will open this file relative to its current directory, read the contents,  
+The client will open a TCP connection to the server. The client will issue a request such as `GET /index.html HTTP/1.1` 
+with an appropriate `Host:` header. The server will open this file relative to its current directory, read the contents, 
 and send back the results. The client will save the file to disk to its own current directory, and close the connection.
 
 ### Sending a GET Request
