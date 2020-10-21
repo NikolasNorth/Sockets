@@ -40,8 +40,8 @@ File: server_files/index.html
 
 **Note:**  
 * Since this runs on localhost, files located on the 'server' are stored under `server_files/` as to not get mixed up  
-with the files downloaded to the client's filesystem. Currently there are some files stored under `server_files`,  
-however feel free to try using some more.
+with the files downloaded to the client's filesystem. Currently there are some demonstration files stored under  
+`server_files`, however feel free to use your own.
 * Server is bound to port `12000`
 
 ### GET Request Errors
