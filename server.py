@@ -1,3 +1,12 @@
+"""Server
+
+This script allows the user to start a server and can be executed by the
+following:
+    `python3 server.py`
+
+This script requires python3 to be installed.
+"""
+
 import socket
 import os
 
@@ -55,19 +64,43 @@ def get_content_type(file_ext):
         return "text/html"
 
 
-def main():
+def main(host, port):
+    """Main function of the script.
+
+    TCP socket will be created and bound to the specified port number on host.
+    The server will listen to for incoming TCP requests. When a valid request
+    for a file is received, a response will be sent back to the client with the
+    file as payload. If the request is not valid, or requested file does not
+    exist then an appropriate error code will be sent back as response.
+
+    If a client uses a version other than HTTP/1.1 in their request, a 505
+    error will be sent as a response.
+    If a client uses a request method other than GET, a 501 error will be
+    sent as a response.
+    If a client requests a file that does not exist, a 404 error will be sent
+    as a response.
+    Otherwise, the requested file will be sent back, along with 202 status code.
+
+    Args:
+        host: Host name
+        port: Port number
+
+    Returns:
+        None
+    """
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind((HOST, PORT))
+    server_socket.bind((host, port))
     server_socket.listen(1)
 
     while True:
         client_socket, client_address = server_socket.accept()
         request = client_socket.recv(1024).decode()
-        request_line, _, _ = request.split('\n')
+        request_line = request.split('\n')[0]
         method, file, protocol = request_line.split(' ')
         filepath, filename = file.rsplit('/', 1)
         filepath = "".join(filepath) if filepath else '/'
-        _, file_ext = filename.rsplit('.', 1)
+        file_ext = filename.rsplit('.', 1)[-1]
+
         if protocol.strip('\r') != "HTTP/1.1":
             response_header = "HTTP/1.1 505 Version Not Supported\r\n\r"
             response_body = "server_files/errors/505.html"
@@ -96,4 +129,4 @@ Content-Type: {content_type}\r
 
 
 if __name__ == '__main__':
-    main()
+    main(HOST, PORT)
