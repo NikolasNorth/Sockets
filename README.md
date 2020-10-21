@@ -1,8 +1,8 @@
 # Sockets
 
 ### Description
-Sockets implements a simplified web server and web downloader client. In response to a request, the server reads the  
-contents of a named file and pushes it back over the same connection. Currently only GET requests using version
+Sockets implements a simplified web server and web downloader client. In response to a request, the server reads the 
+contents of a named file and pushes it back over the same connection. Currently only GET requests using version 
 `HTTP/1.1` are supported.
 
 ### How it works
@@ -21,7 +21,7 @@ python3 server.py
 ```
 
 **4. Issue GET request from client**  
-You can issue a GET request by either executing `client.py` script with or without a URL argument. If you choose not to  
+You can issue a GET request by either executing `client.py` script with or without a URL argument. If you choose not to 
 enter a URL, you will be prompted to enter the localhost, port number and desired file name.  
   
 **With URL:**  
@@ -39,14 +39,14 @@ File: server_files/index.html
 ```
 
 **Note:**  
-* Since this runs on localhost, files located on the 'server' are stored under `server_files/` as to not get mixed up  
-with the files downloaded to the client's filesystem. Currently there are some demonstration files stored under  
+* Since this runs on localhost, files located on the 'server' are stored under `server_files/` as to not get mixed up 
+with the files downloaded to the client's filesystem. Currently there are some demonstration files stored under 
 `server_files`, however feel free to use your own.
 * Server is bound to port `12000`
 
 ### GET Request Errors
-Currently the server only supports GET requests. Any other request will have a `501 Method Not Implemented` error issued  
-as a response.
+Currently the server only supports GET requests. Any other request will have a `501 Method Not Implemented` error 
+issued as a response.
 
-Similarly, the server only supports version `HTTP/1.1`. Any other version will have a `505 Version Not Supported` error  
+Similarly, the server only supports version `HTTP/1.1`. Any other version will have a `505 Version Not Supported` error 
 issued as a response. 
