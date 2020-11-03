@@ -10,7 +10,7 @@ to enter the host, port and file.
 
 For example, to send a request for `index.html` (located in `server_files/`)
 using localhost on port 12000:
-    `python3 server.py client.py localhost:12000/server_files/index.html`
+    `python3 client.py localhost:12000/server_files/index.html`
 
 This script requires python3 to be installed.
 """
@@ -65,13 +65,36 @@ Host: {host}\r
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        url = sys.argv[1]
-        hostname, _ = url.split(':')
-        port_number, filename = _.split('/', 1)
-    else:
-        hostname = input("Hostname: ")
-        port_number = input("Port Number: ")
-        filename = input("File: ")
+    try:
+        if len(sys.argv) > 1:
+            # Extract request info from command
+            if "-proxy" in sys.argv:
+                # With caching
+                proxy = True
+                url = sys.argv[3]
+                hostname, _ = url.split(':')
+                port_number, filename = _.split('/', 1)
+                proxy_url = sys.argv[2]
+                proxy_hostname, proxy_port_number = proxy_url.split(':')
+            else:
+                # Without caching
+                proxy = False
+                url = sys.argv[1]
+                hostname, _ = url.split(':')
+                port_number, filename = _.split('/', 1)
+        else:
+            # Prompt user for request info
+            hostname = input("Hostname: ")
+            port_number = input("Port Number: ")
+            filename = input("File: ")
+            proxy_hostname = input("Proxy Hostname: ")
+            proxy_port = input("Proxy Port Number: ")
+            proxy = True if (proxy_hostname and proxy_port) else False
 
-    main(hostname, port_number, filename)
+        if proxy:
+            print("Request w/ proxy")
+        else:
+            print("Request w/o proxy")
+        # main(hostname, port_number, filename)
+    except:
+        print("Invalid command.")
