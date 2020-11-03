@@ -103,10 +103,10 @@ def main(host, port):
 
         if protocol.strip('\r') != "HTTP/1.1":
             response_header = "HTTP/1.1 505 Version Not Supported\r\n\r"
-            response_body = "server_files/errors/505.html"
+            response_body = "files/errors/505.html"
         elif method != "GET":
             response_header = "HTTP/1.1 501 Method Not Implemented\r\n\r"
-            response_body = "server_files/errors/501.html"
+            response_body = "files/errors/501.html"
         elif is_file_found(filename, filepath):
             content_length = get_content_length(file[1:])
             content_type = get_content_type(file_ext)
@@ -117,7 +117,7 @@ Content-Type: {content_type}\r
             response_body = file[1:]
         else:
             response_header = """HTTP/1.1 404 Not Found\r\n\r"""
-            response_body = "server_files/errors/404.html"
+            response_body = "files/errors/404.html"
 
         client_socket.send(response_header.encode())
         with open(response_body, "rb") as file:

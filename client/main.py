@@ -10,7 +10,7 @@ to enter the host, port and file.
 
 For example, to send a request for `index.html` (located in `server_files/`)
 using localhost on port 12000:
-    `python3 client/main.py localhost:12000/server_files/index.html`
+    `python3 client/main.py localhost:12000/server/files/index.html`
 
 This script requires python3 to be installed.
 """
