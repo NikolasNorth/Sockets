@@ -1,8 +1,8 @@
-"""Server
+"""Web Server
 
 This script allows the user to start a server and can be executed by the
 following:
-    `python3 server.py`
+    `python3 server/main.py`
 
 This script requires python3 to be installed.
 """
