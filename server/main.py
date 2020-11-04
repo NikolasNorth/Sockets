@@ -11,10 +11,10 @@ import socket
 import os
 
 HOST = "localhost"
-PORT = 12000
+PORT = 8000
 
 
-def is_file_found(filename, filepath):
+def is_file_found(file):
     """Searches for file relative to current directory.
 
     Args:
@@ -25,17 +25,10 @@ def is_file_found(filename, filepath):
         True, if file is found.
         False, otherwise.
     """
-    PATH_TO_CWD = os.path.abspath(os.getcwd())
-    try:
-        for file in os.listdir(PATH_TO_CWD + filepath):
-            if file == filename:
-                return True
-        return False  # filename does not exist
-    except FileNotFoundError:  # filepath does not exist
-        return False
+    return os.path.isfile(file)
 
 
-def get_content_length(filename):
+def get_content_length(file):
     """Returns the size (in bytes) of a file.
 
     Args:
@@ -44,7 +37,7 @@ def get_content_length(filename):
     Returns:
         Size (in bytes) of file.
     """
-    return os.stat(filename).st_size
+    return os.stat(file).st_size
 
 
 def get_content_type(file_ext):
@@ -88,37 +81,45 @@ def main(host, port):
     Returns:
         None
     """
+    # Bind server to socket and listen for requests
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((host, port))
     server_socket.listen(1)
+    print(f"""Server listening on port {PORT}...""")
 
     while True:
+        # Make TCP connection with client
         client_socket, client_address = server_socket.accept()
+
+        # Receive request
         request = client_socket.recv(1024).decode()
         request_line = request.split('\n')[0]
         method, file, protocol = request_line.split(' ')
-        filepath, filename = file.rsplit('/', 1)
-        filepath = "".join(filepath) if filepath else '/'
-        file_ext = filename.rsplit('.', 1)[-1]
+        file = "./files" + file
+        # filepath, filename = file.rsplit('/', 1)
+        # filepath = "".join(filepath) if filepath else '/'
+        file_ext = file.rsplit('.', 1)[-1]
 
+        # Prepare response
         if protocol.strip('\r') != "HTTP/1.1":
             response_header = "HTTP/1.1 505 Version Not Supported\r\n\r"
             response_body = "files/errors/505.html"
         elif method != "GET":
             response_header = "HTTP/1.1 501 Method Not Implemented\r\n\r"
             response_body = "files/errors/501.html"
-        elif is_file_found(filename, filepath):
-            content_length = get_content_length(file[1:])
+        elif is_file_found(file):
+            content_length = get_content_length(file)
             content_type = get_content_type(file_ext)
             response_header = f"""HTTP/1.1 200 OK\r
 Content-Length: {content_length}\r
 Content-Type: {content_type}\r
 \r"""
-            response_body = file[1:]
+            response_body = file
         else:
             response_header = """HTTP/1.1 404 Not Found\r\n\r"""
             response_body = "files/errors/404.html"
 
+        # Send response
         client_socket.send(response_header.encode())
         with open(response_body, "rb") as file:
             data = file.read(1024)

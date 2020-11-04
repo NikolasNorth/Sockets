@@ -19,6 +19,18 @@ import socket
 import sys
 
 
+def main_test(host, port, file):
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.connect((host, int(port)))
+    request = f"""GET /{file} HTTP/1.1\r
+Host: {host}\r
+\r"""
+    server_socket.send(request.encode())
+    response_header = server_socket.recv(1024).decode()
+    print(response_header)
+    server_socket.close()
+
+
 def main(host, port, file):
     """Main function of the script.
 
@@ -32,69 +44,71 @@ def main(host, port, file):
         host: Hostname
         port: Port number
         file: Filename
+        proxy_host: Hostname of proxy
+        proxy_port: Port number of proxy
 
     Returns:
         None
     """
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect((host, int(port)))
+    # Make TCP connection with server
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.connect((host, int(port)))
 
+    # Send request
     request = f"""GET /{file} HTTP/1.1\r
 Host: {host}\r
 \r"""
-    client_socket.send(request.encode())
-    response = client_socket.recv(1024).decode()
+    server_socket.send(request.encode())
+
+    # Receive response
+    response = server_socket.recv(1024).decode()
     status_line = response.split('\n')[0]
     status_code = int(status_line.split(' ')[1])
     if status_code == 200:
         print(response)
         filename = file.rsplit('/', 1)[-1]
-        with open(filename, "wb") as new_file:
-            data = client_socket.recv(1024)
+        with open("./files/" + filename, "wb") as new_file:
+            data = server_socket.recv(1024)
             while data:
                 new_file.write(data)
-                data = client_socket.recv(1024)
+                data = server_socket.recv(1024)
     else:
         print(response)
-        data = client_socket.recv(1024)
+        data = server_socket.recv(1024)
         while data:
             print(data.decode())
-            data = client_socket.recv(1024)
+            data = server_socket.recv(1024)
 
-    client_socket.close()
+    # Close TCP connection with server
+    server_socket.close()
 
 
 if __name__ == '__main__':
-    try:
-        if len(sys.argv) > 1:
-            # Extract request info from command
-            if "-proxy" in sys.argv:
-                # With caching
-                proxy = True
-                url = sys.argv[3]
-                hostname, _ = url.split(':')
-                port_number, filename = _.split('/', 1)
-                proxy_url = sys.argv[2]
-                proxy_hostname, proxy_port_number = proxy_url.split(':')
-            else:
-                # Without caching
-                proxy = False
-                url = sys.argv[1]
-                hostname, _ = url.split(':')
-                port_number, filename = _.split('/', 1)
+    proxy_host = None
+    proxy_port = None
+    if len(sys.argv) > 1:
+        # Extract request info from command
+        if "-proxy" in sys.argv:
+            # With caching
+            url = sys.argv[3]
+            host, _ = url.split(':')
+            port, file = _.split('/', 1)
+            proxy_url = sys.argv[2]
+            proxy_host, proxy_port = proxy_url.split(':')
         else:
-            # Prompt user for request info
-            hostname = input("Hostname: ")
-            port_number = input("Port Number: ")
-            filename = input("File: ")
-            proxy_hostname = input("Proxy Hostname: ")
-            proxy_port = input("Proxy Port Number: ")
-            proxy = True if (proxy_hostname and proxy_port) else False
+            # Without caching
+            url = sys.argv[1]
+            host, _ = url.split(':')
+            port, file = _.split('/', 1)
+    else:
+        # Prompt user for request info
+        host = input("Hostname: ")
+        port = input("Port Number: ")
+        file = input("File: ")
+        proxy_host = input("Proxy Hostname: ")
+        proxy_port = input("Proxy Port Number: ")
 
-        if proxy:
-            print("Request w/ proxy")
-        else:
-            print("Request w/o proxy")
-        # main(hostname, port_number, filename)
-    except:
-        print("Invalid command.")
+    if proxy_host and proxy_port:
+        main(proxy_host, proxy_port, file)
+    else:
+        main(host, port, file)
