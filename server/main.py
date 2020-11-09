@@ -9,6 +9,7 @@ This script requires python3 to be installed.
 
 import socket
 import os
+from datetime import datetime
 
 HOST = "localhost"
 PORT = 8000
@@ -93,9 +94,11 @@ def main(host, port):
 
         # Receive request
         request = client_socket.recv(1024).decode()
-        request_line = request.split('\n')[0]
-        method, file, protocol = request_line.split(' ')
-        file = "./files" + file
+        split_request = request.split('\n')
+
+        request_line = split_request[0]
+        method, requested_file, protocol = request_line.split(' ')
+        file = "./files" + requested_file
         # filepath, filename = file.rsplit('/', 1)
         # filepath = "".join(filepath) if filepath else '/'
         file_ext = file.rsplit('.', 1)[-1]
@@ -108,24 +111,57 @@ def main(host, port):
             response_header = "HTTP/1.1 501 Method Not Implemented\r\n\r"
             response_body = "files/errors/501.html"
         elif is_file_found(file):
-            content_length = get_content_length(file)
-            content_type = get_content_type(file_ext)
-            response_header = f"""HTTP/1.1 200 OK\r
+            server_last_modified_str = datetime.strftime(
+                datetime.fromtimestamp(os.path.getmtime(file)),
+                "%a, %w %b %Y %H:%M:%S"
+            )
+            if len(split_request) == 4:
+                # Conditional GET
+                # Get datetime for last modification
+                server_last_modified_dt = datetime.strptime(
+                    server_last_modified_str,
+                    "%a, %w %b %Y %H:%M:%S"
+                )
+                # Retrieve date from request string
+                if_modified_date = split_request[2].split(' ', 1)[1]
+                if_modified_date = if_modified_date.rsplit(' ', 1)[0]
+                # Convert date string to datetime obj
+                client_last_modified_dt = datetime.strptime(
+                    if_modified_date,
+                    "%a, %w %b %Y %H:%M:%S"
+                )
+                if client_last_modified_dt < server_last_modified_dt:
+                    response_header = f"""HTTP/1.1 200 OK\r
+Last-Modified: {server_last_modified_str}\r
+\r"""
+                    response_body = file
+                else:
+                    response_header = f"""HTTP/1.1 304 Not Modified\r
+Last-Modified: {server_last_modified_str}\r
+\r"""
+                    response_body = None
+                # TESTED
+            else:
+                content_length = get_content_length(file)
+                content_type = get_content_type(file_ext)
+                response_header = f"""HTTP/1.1 200 OK\r
 Content-Length: {content_length}\r
 Content-Type: {content_type}\r
 \r"""
-            response_body = file
+                response_body = file
+                # TESTED
         else:
             response_header = """HTTP/1.1 404 Not Found\r\n\r"""
             response_body = "files/errors/404.html"
 
         # Send response
         client_socket.send(response_header.encode())
-        with open(response_body, "rb") as file:
-            data = file.read(1024)
-            while data:
-                client_socket.send(data)
+        if response_body:
+            with open(response_body, "rb") as file:
                 data = file.read(1024)
+                while data:
+                    client_socket.send(data)
+                    data = file.read(1024)
         client_socket.shutdown(socket.SHUT_WR)
 
 

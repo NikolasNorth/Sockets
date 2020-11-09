@@ -19,19 +19,7 @@ import socket
 import sys
 
 
-def main_test(host, port, file):
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.connect((host, int(port)))
-    request = f"""GET /{file} HTTP/1.1\r
-Host: {host}\r
-\r"""
-    server_socket.send(request.encode())
-    response_header = server_socket.recv(1024).decode()
-    print(response_header)
-    server_socket.close()
-
-
-def main(host, port, file):
+def main(server_host, server_port, file, proxy_host=None, proxy_port=None):
     """Main function of the script.
 
     Creates TCP socket for server and connects to specified port on host. Sends
@@ -52,11 +40,14 @@ def main(host, port, file):
     """
     # Make TCP connection with server
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.connect((host, int(port)))
+    if proxy_host and proxy_port:
+        server_socket.connect((proxy_host, int(proxy_port)))
+    else:
+        server_socket.connect((server_host, int(server_port)))
 
     # Send request
     request = f"""GET /{file} HTTP/1.1\r
-Host: {host}\r
+Host: {server_host}:{server_port}\r
 \r"""
     server_socket.send(request.encode())
 
@@ -91,24 +82,24 @@ if __name__ == '__main__':
         if "-proxy" in sys.argv:
             # With caching
             url = sys.argv[3]
-            host, _ = url.split(':')
-            port, file = _.split('/', 1)
+            server_host, _ = url.split(':')
+            server_port, file = _.split('/', 1)
             proxy_url = sys.argv[2]
             proxy_host, proxy_port = proxy_url.split(':')
         else:
             # Without caching
             url = sys.argv[1]
-            host, _ = url.split(':')
-            port, file = _.split('/', 1)
+            server_host, _ = url.split(':')
+            server_port, file = _.split('/', 1)
     else:
         # Prompt user for request info
-        host = input("Hostname: ")
-        port = input("Port Number: ")
+        server_host = input("Hostname: ")
+        server_port = input("Port Number: ")
         file = input("File: ")
         proxy_host = input("Proxy Hostname: ")
         proxy_port = input("Proxy Port Number: ")
 
     if proxy_host and proxy_port:
-        main(proxy_host, proxy_port, file)
+        main(server_host, server_port, file, proxy_host, proxy_port)
     else:
-        main(host, port, file)
+        main(server_host, server_port, file)
