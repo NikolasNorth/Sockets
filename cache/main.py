@@ -7,13 +7,14 @@ following:
 """
 
 import os
+import sys
 import socket
 import time
 from datetime import datetime
 
 HOST = "localhost"
 PORT = 9000
-FILE_EXPIRE_TIME = 120  # seconds
+FILE_EXPIRE_TIME = 86400  # seconds in 24hrs
 BUFFER_SIZE = 1024
 
 
@@ -105,11 +106,19 @@ def main():
         requested_file = request_info.split(' ')[1]
         server_host, server_port = host_info.split(':')
         file = f"""{server_host}_{server_port}""" + requested_file
-
-        # Make TCP connection with server
-        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_socket.connect((server_host, int(server_port)))
-
+        try:
+            # Make TCP connection with server
+            server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            server_socket.connect((server_host, int(server_port)))
+        except ConnectionRefusedError:
+            response_header = "HTTP/1.1 523 Origin Is Unreachable\r\n\r"
+            response_body = "files/errors/523.html"
+            client_socket.send(response_header.encode())
+            with open(response_body, "rb") as f:
+                while data := f.read(BUFFER_SIZE):
+                    client_socket.send(data)
+            client_socket.shutdown(socket.SHUT_WR)
+            sys.exit(1)
         if os.path.isfile("files/" + file):
             # File is cached, check if expired
             current_t = time.time()

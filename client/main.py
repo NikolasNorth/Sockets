@@ -40,13 +40,16 @@ def main(server_host, server_port, file, proxy_host=None, proxy_port=None):
     Returns:
         None
     """
-    # Make TCP connection with server
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    if proxy_host and proxy_port:
-        server_socket.connect((proxy_host, int(proxy_port)))
-    else:
-        server_socket.connect((server_host, int(server_port)))
-
+    try:
+        # Make TCP connection with server
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if proxy_host and proxy_port:
+            server_socket.connect((proxy_host, int(proxy_port)))
+        else:
+            server_socket.connect((server_host, int(server_port)))
+    except ConnectionRefusedError:
+        print("Error: Could not connect to server")
+        sys.exit(1)
     # Send request
     request = f"""GET /{file} HTTP/1.1\r
 Host: {server_host}:{server_port}\r
@@ -77,20 +80,23 @@ Host: {server_host}:{server_port}\r
 
 
 if __name__ == '__main__':
-    proxy_host, proxy_port = None, None
-    # Extract request info from command
-    if "-proxy" in sys.argv:
-        url = sys.argv[3]
-        server_host, _ = url.split(':')
-        server_port, file = _.split('/', 1)
-        proxy_url = sys.argv[2]
-        proxy_host, proxy_port = proxy_url.split(':')
-    else:
-        url = sys.argv[1]
-        server_host, _ = url.split(':')
-        server_port, file = _.split('/', 1)
+    try:
+        proxy_host, proxy_port = None, None
+        # Extract request info from command
+        if "-proxy" in sys.argv:
+            url = sys.argv[3]
+            server_host, _ = url.split(':')
+            server_port, file = _.split('/', 1)
+            proxy_url = sys.argv[2]
+            proxy_host, proxy_port = proxy_url.split(':')
+        else:
+            url = sys.argv[1]
+            server_host, _ = url.split(':')
+            server_port, file = _.split('/', 1)
 
-    if proxy_host and proxy_port:
-        main(server_host, server_port, file, proxy_host, proxy_port)
-    else:
-        main(server_host, server_port, file)
+        if proxy_host and proxy_port:
+            main(server_host, server_port, file, proxy_host, proxy_port)
+        else:
+            main(server_host, server_port, file)
+    except IndexError:
+        print("Error: Please provide server name, port number and file.")
