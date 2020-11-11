@@ -13,27 +13,14 @@ from datetime import datetime
 
 HOST = "localhost"
 PORT = 8000
-
-
-def is_file_found(file):
-    """Searches for file relative to current directory.
-
-    Args:
-        filename: Name of file
-        filepath: Path to file
-
-    Returns:
-        True, if file is found.
-        False, otherwise.
-    """
-    return os.path.isfile(file)
+BUFFER_SIZE = 1024
 
 
 def get_content_length(file):
     """Returns the size (in bytes) of a file.
 
     Args:
-        filename: Filename (including directories in path relative to Sockets/)
+        file: Filename (relative to server/)
 
     Returns:
         Size (in bytes) of file.
@@ -58,7 +45,7 @@ def get_content_type(file_ext):
         return "text/html"
 
 
-def main(host, port):
+def main():
     """Main function of the script.
 
     TCP socket will be created and bound to the specified port number on host.
@@ -84,7 +71,7 @@ def main(host, port):
     """
     # Bind server to socket and listen for requests
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind((host, port))
+    server_socket.bind((HOST, PORT))
     server_socket.listen(1)
     print(f"""Server listening on port {PORT}...""")
 
@@ -92,15 +79,13 @@ def main(host, port):
         # Make TCP connection with client
         client_socket, client_address = server_socket.accept()
 
-        # Receive request
-        request = client_socket.recv(1024).decode()
+        # Receive request from client
+        request = client_socket.recv(BUFFER_SIZE).decode()
         split_request = request.split('\n')
 
         request_line = split_request[0]
         method, requested_file, protocol = request_line.split(' ')
         file = "./files" + requested_file
-        # filepath, filename = file.rsplit('/', 1)
-        # filepath = "".join(filepath) if filepath else '/'
         file_ext = file.rsplit('.', 1)[-1]
 
         # Prepare response
@@ -110,7 +95,7 @@ def main(host, port):
         elif method != "GET":
             response_header = "HTTP/1.1 501 Method Not Implemented\r\n\r"
             response_body = "files/errors/501.html"
-        elif is_file_found(file):
+        elif os.path.isfile(file):
             server_last_modified_str = datetime.strftime(
                 datetime.fromtimestamp(os.path.getmtime(file)),
                 "%a, %w %b %Y %H:%M:%S"
@@ -125,7 +110,6 @@ def main(host, port):
                 # Retrieve date from request string
                 if_modified_date = split_request[2].split(' ', 1)[1]
                 if_modified_date = if_modified_date.rsplit(' ', 1)[0]
-                # Convert date string to datetime obj
                 client_last_modified_dt = datetime.strptime(
                     if_modified_date,
                     "%a, %w %b %Y %H:%M:%S"
@@ -140,7 +124,6 @@ Last-Modified: {server_last_modified_str}\r
 Last-Modified: {server_last_modified_str}\r
 \r"""
                     response_body = None
-                # TESTED
             else:
                 content_length = get_content_length(file)
                 content_type = get_content_type(file_ext)
@@ -149,7 +132,6 @@ Content-Length: {content_length}\r
 Content-Type: {content_type}\r
 \r"""
                 response_body = file
-                # TESTED
         else:
             response_header = """HTTP/1.1 404 Not Found\r\n\r"""
             response_body = "files/errors/404.html"
@@ -158,12 +140,12 @@ Content-Type: {content_type}\r
         client_socket.send(response_header.encode())
         if response_body:
             with open(response_body, "rb") as file:
-                data = file.read(1024)
+                data = file.read(BUFFER_SIZE)
                 while data:
                     client_socket.send(data)
-                    data = file.read(1024)
+                    data = file.read(BUFFER_SIZE)
         client_socket.shutdown(socket.SHUT_WR)
 
 
 if __name__ == '__main__':
-    main(HOST, PORT)
+    main()

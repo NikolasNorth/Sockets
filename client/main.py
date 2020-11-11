@@ -18,6 +18,8 @@ This script requires python3 to be installed.
 import socket
 import sys
 
+BUFFER_SIZE = 1024
+
 
 def main(server_host, server_port, file, proxy_host=None, proxy_port=None):
     """Main function of the script.
@@ -29,11 +31,11 @@ def main(server_host, server_port, file, proxy_host=None, proxy_port=None):
     response status code, the client will quit the connection thereafter.
 
     Args:
-        host: Hostname
-        port: Port number
+        server_host: Hostname of server
+        server_port: Port number for server
         file: Filename
         proxy_host: Hostname of proxy
-        proxy_port: Port number of proxy
+        proxy_port: Port number for proxy
 
     Returns:
         None
@@ -52,52 +54,41 @@ Host: {server_host}:{server_port}\r
     server_socket.send(request.encode())
 
     # Receive response
-    response = server_socket.recv(1024).decode()
+    response = server_socket.recv(BUFFER_SIZE).decode()
     status_line = response.split('\n')[0]
     status_code = int(status_line.split(' ')[1])
     if status_code == 200:
         print(response)
         filename = file.rsplit('/', 1)[-1]
         with open("./files/" + filename, "wb") as new_file:
-            data = server_socket.recv(1024)
+            data = server_socket.recv(BUFFER_SIZE)
             while data:
                 new_file.write(data)
-                data = server_socket.recv(1024)
+                data = server_socket.recv(BUFFER_SIZE)
     else:
         print(response)
-        data = server_socket.recv(1024)
+        data = server_socket.recv(BUFFER_SIZE)
         while data:
             print(data.decode())
-            data = server_socket.recv(1024)
+            data = server_socket.recv(BUFFER_SIZE)
 
     # Close TCP connection with server
     server_socket.close()
 
 
 if __name__ == '__main__':
-    proxy_host = None
-    proxy_port = None
-    if len(sys.argv) > 1:
-        # Extract request info from command
-        if "-proxy" in sys.argv:
-            # With caching
-            url = sys.argv[3]
-            server_host, _ = url.split(':')
-            server_port, file = _.split('/', 1)
-            proxy_url = sys.argv[2]
-            proxy_host, proxy_port = proxy_url.split(':')
-        else:
-            # Without caching
-            url = sys.argv[1]
-            server_host, _ = url.split(':')
-            server_port, file = _.split('/', 1)
+    proxy_host, proxy_port = None, None
+    # Extract request info from command
+    if "-proxy" in sys.argv:
+        url = sys.argv[3]
+        server_host, _ = url.split(':')
+        server_port, file = _.split('/', 1)
+        proxy_url = sys.argv[2]
+        proxy_host, proxy_port = proxy_url.split(':')
     else:
-        # Prompt user for request info
-        server_host = input("Hostname: ")
-        server_port = input("Port Number: ")
-        file = input("File: ")
-        proxy_host = input("Proxy Hostname: ")
-        proxy_port = input("Proxy Port Number: ")
+        url = sys.argv[1]
+        server_host, _ = url.split(':')
+        server_port, file = _.split('/', 1)
 
     if proxy_host and proxy_port:
         main(server_host, server_port, file, proxy_host, proxy_port)

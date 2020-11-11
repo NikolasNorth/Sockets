@@ -1,3 +1,11 @@
+"""Cache
+
+This script allows the user to cache valid responses and can be executed by the
+following:
+    `python3 cache/main.py`
+
+"""
+
 import os
 import socket
 import time
@@ -6,20 +14,24 @@ from datetime import datetime
 HOST = "localhost"
 PORT = 9000
 FILE_EXPIRE_TIME = 120  # seconds
+BUFFER_SIZE = 1024
 
 
-def is_file_cached(filepath):
-    """Checks to see if given file is stored in cache.
+def get_content_type(file_ext):
+    """Returns the content type of a file.
 
     Args:
-        filepath: Path to file stored in cache (without leading slash '/')
-            eg: localhost_8000/styles/main.css
+        file_ext: File extension
 
     Returns:
-        If yes, returns True
-        If no, returns False
+        Content type associated with file extension. Default is "text/html".
     """
-    return os.path.isfile("files/" + filepath)
+    if file_ext in ["jpg", "jpeg"]:
+        return "image/jpeg"
+    elif file_ext == "gif":
+        return "image/gif"
+    else:
+        return "text/html"
 
 
 def get_status_code(response_header):
@@ -50,7 +62,7 @@ def cache(filepath, filename, server_socket):
         os.remove("./files/" + filepath + '/' + filename)
     os.makedirs("./files/" + filepath, exist_ok=True)
     with open("./files/" + filepath + "/" + filename, "wb") as f:
-        while data := server_socket.recv(1024):
+        while data := server_socket.recv(BUFFER_SIZE):
             f.write(data)
 
 
@@ -68,7 +80,7 @@ def send_200_response(header, filepath, filename, client_socket):
     """
     client_socket.send(header.encode())
     with open("./files/" + filepath + "/" + filename, "rb") as f:
-        while data := f.read(1024):
+        while data := f.read(BUFFER_SIZE):
             client_socket.send(data)
 
 
@@ -83,14 +95,13 @@ def main():
         # Make TCP connection with client
         client_socket, client_address = proxy_socket.accept()
 
-        # Process request from client
-        request = client_socket.recv(1024).decode()
+        # Receive request from client
+        request = client_socket.recv(BUFFER_SIZE).decode()
         split_request = request.split("\r\n")
         request_info = split_request[0]
         host_info = split_request[1]
         _, host_info = host_info.split(' ')
 
-        # Server host, port and requested file
         requested_file = request_info.split(' ')[1]
         server_host, server_port = host_info.split(':')
         file = f"""{server_host}_{server_port}""" + requested_file
@@ -99,43 +110,43 @@ def main():
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.connect((server_host, int(server_port)))
 
-        if is_file_cached(file):
-            # Check if file in cache is expired
+        if os.path.isfile("files/" + file):
+            # File is cached, check if expired
             current_t = time.time()
             file_mt = os.path.getmtime("./files/" + file)
             if current_t - file_mt > FILE_EXPIRE_TIME:
-                # Forward request to server
+                # File is expired, forward request to the server
                 server_socket.send(request.encode())
 
-                # Extract status code from server response
-                server_response_header = server_socket.recv(1024).decode()
+                # Receive response
+                server_response_header = server_socket.recv(
+                    BUFFER_SIZE).decode()
                 status_code = get_status_code(server_response_header)
                 filepath, filename = file.rsplit('/', 1)
                 if status_code == 200:
-                    # Store file in cache
+                    # Cache file and send response to client
                     cache(filepath, filename, server_socket)
-                    # Send response to client
                     send_200_response(
                         server_response_header,
                         filepath,
                         filename,
                         client_socket
                     )
-                    # TESTED
                 elif status_code == 404:
+                    # Remove file from cache, forward response to client
                     os.remove("./files/" + file)
                     if not os.listdir("./files/" + filepath):
                         os.rmdir("./files/" + filepath)
                     client_socket.send(server_response_header.encode())
-                    while data := server_socket.recv(1024):
+                    while data := server_socket.recv(BUFFER_SIZE):
                         client_socket.send(data)
-                    # TESTED
                 else:
+                    # Forward response to client
                     client_socket.send(server_response_header.encode())
-                    while data := server_socket.recv(1024):
+                    while data := server_socket.recv(BUFFER_SIZE):
                         client_socket.send(data)
-                    # TESTED
             else:
+                # File is not expired, send conditional GET
                 last_modified = datetime.strftime(
                     datetime.fromtimestamp(file_mt),
                     "%a, %w %b %Y %H:%M:%S"
@@ -145,15 +156,18 @@ Host: {server_host}:{server_port}\r
 If-modified-since: {last_modified} GMT\r
 \r"""
                 server_socket.send(conditional_get.encode())
-                # Extract status code from response
-                server_response_header = server_socket.recv(1024).decode()
-                print(server_response_header)
+
+                # Receive response
+                server_response_header = server_socket.recv(
+                    BUFFER_SIZE).decode()
                 status_code = get_status_code(server_response_header)
                 filepath, filename = file.rsplit('/', 1)
                 if status_code == 200:
                     cache(filepath, filename, server_socket)
+
                 content_len = os.stat("./files/" + file).st_size
-                content_type = 'text/html'
+                file_ext = file.rsplit('.', 1)
+                content_type = get_content_type(file_ext)
                 server_response_header = f"""HTTP/1.1 200 OK\r
 Content-Length: {content_len}\r
 Content-Type: {content_type}\r
@@ -165,17 +179,16 @@ Content-Type: {content_type}\r
                     client_socket
                 )
         else:
-            # Forward request to server
+            # File is not cached, forward request to the server
             server_socket.send(request.encode())
 
-            # Extract status code from server response
-            server_response_header = server_socket.recv(1024).decode()
+            # Receive response
+            server_response_header = server_socket.recv(BUFFER_SIZE).decode()
             status_code = get_status_code(server_response_header)
             if status_code == 200:
+                # Cache file and send response
                 filepath, filename = file.rsplit('/', 1)
-                # Store file in cache
                 cache(filepath, filename, server_socket)
-                # Send response to client
                 send_200_response(
                     server_response_header,
                     filepath,
@@ -183,15 +196,12 @@ Content-Type: {content_type}\r
                     client_socket
                 )
             else:
-                # Forward error response to client
+                # Forward response to client
                 client_socket.send(server_response_header.encode())
-                while data := server_socket.recv(1024):
+                while data := server_socket.recv(BUFFER_SIZE):
                     client_socket.send(data)
-            # TESTED
 
-        # Shutdown TCP connection with server
         server_socket.close()
-        # Shutdown TCP connection with client
         client_socket.shutdown(socket.SHUT_WR)
 
 
