@@ -1,52 +1,54 @@
 # Sockets
 
-### Description
+## Description
 Sockets implements a simplified web server and web downloader client. In response to a request, the server reads the 
 contents of a named file and pushes it back over the same connection. Currently only GET requests using version 
 `HTTP/1.1` are supported.
 
-### How it works
+## How it works
+### Without Cache
 The client will open a TCP connection to the server. The client will issue a request such as `GET /index.html HTTP/1.1` 
-with an appropriate `Host:` header. The server will open this file relative to its current directory, read the contents, 
-and send back the results. The client will save the file to disk to its own current directory, and close the connection.
+with an appropriate `Host:` header. The server will open this file relative to its `files/` directory, read the contents, 
+and send back the results. The client will save the file to disk to its own `files/` directory, and close the connection. 
 
-### Sending a GET Request
-**1. Open Terminal**
+### With Cache
+The client will open a TCP connection to the proxy. The client will issue a GET request. Upon receiving the request, the
+proxy checks to see if the file is stored in cache. That is, within its `files/` directory. If it's not, then the GET 
+request is forwarded to the server. If it is then the proxy checks to see if the file is expired. If the file is expired, 
+it forwards the GET request to the server. Upon receiving the response from the server, if a 404, 501 or 505 error 
+occured, then the response is forwarded to the client. Otherwise, the cache downloads the file and sends it the client 
+client as a response. If the file was not expired, then the proxy sends a conditional GET to the server to see if the 
+file was updated. If it is then it receives the latest copy of the file and forwards it to the client. Otherwise, it 
+receives a `304 Not Modified` as a response from the server and sends its cached copy to the client.
 
-**2. Navigate to `Sockets` directory**
+## Sending a GET Request
+### Without Cache
+#### 1. Start server
+- `python3 server/main.py`
 
-**3. Start the server**  
-```commandline
-python3 server.py
-```
+#### 2. Send request
+- `python3 client/main.py localhost:8000/index.html`
 
-**4. Issue GET request from client**  
-You can issue a GET request by either executing `client.py` script with or without a URL argument. If you choose not to 
-enter a URL, you will be prompted to enter the localhost, port number and desired file name.  
-  
-**With URL:**  
-```commandline
-python3 client.py localhost:12000/server_files/index.html
-```
-  
-**Without URL:**  
-```commandline
-python3 client.py
+If the response is `200` then `index.html` should be found within `client/files/`.
 
-Hostname: localhost
-Port Number: 12000
-File: server_files/index.html
-```
+### With Cache
+#### 1. Start server
+- `python3 server/main.py`
 
-**Note:**  
-* Since this runs on localhost, files located on the 'server' are stored under `server_files/` as to not get mixed up 
-with the files downloaded to the client's filesystem. Currently there are some demonstration files stored under 
-`server_files`, however feel free to use your own.
-* Server is bound to port `12000`
+#### 2. Start proxy
+- `python3 cache/main.py`
 
-### GET Request Errors
+#### 3. Send request
+- `python3 client/main.py -proxy localhost:9000 localhost:8000/index.html`
+
+If the response is `200` then `index.html` should be found within `cache/files/` and `client/files`.
+
+## GET Request Errors
 Currently the server only supports GET requests. Any other request will have a `501 Method Not Implemented` error 
 issued as a response.
 
 Similarly, the server only supports version `HTTP/1.1`. Any other version will have a `505 Version Not Supported` error 
 issued as a response. 
+
+If a request is sent to the server via a proxy and the server is not available, a `523 Origin Is Unreachable` error will 
+be sent back the the client.
