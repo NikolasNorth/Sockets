@@ -62,10 +62,6 @@ def main():
     as a response.
     Otherwise, the requested file will be sent back, along with 202 status code.
 
-    Args:
-        host: Host name
-        port: Port number
-
     Returns:
         None
     """
