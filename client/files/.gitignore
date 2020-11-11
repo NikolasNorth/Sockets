@@ -1,0 +1,6 @@
+### Directory used to store files on the client.
+# Ignore everything in this directory
+*
+# Except for this file
+!.gitignore
+

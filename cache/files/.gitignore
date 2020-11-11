@@ -1,0 +1,6 @@
+### Directory used to store cached files.
+# Ignore everything in this directory
+*
+# Except this file
+!.gitignore
+
