@@ -2,7 +2,7 @@
 
 This script allows the user to start a server and can be executed by the
 following:
-    `python3 server/main.py`
+    `python3 server/server1.py`
 
 This script requires python3 to be installed.
 """
