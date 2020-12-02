@@ -1,1 +1,14 @@
-# List of servers (host:port)
+{
+  "servers": [
+    {
+      "id": 1,
+      "host": "localhost",
+      "port": 10000
+    },
+    {
+      "id": 2,
+      "host": "localhost",
+      "port": 10001
+    }
+  ]
+}
