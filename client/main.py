@@ -50,6 +50,7 @@ def main(server_host, server_port, file, proxy_host=None, proxy_port=None):
     except ConnectionRefusedError:
         print("Error: Could not connect to server")
         sys.exit(1)
+
     # Send request
     request = f"""GET /{file} HTTP/1.1\r
 Host: {server_host}:{server_port}\r
@@ -68,6 +69,12 @@ Host: {server_host}:{server_port}\r
             while data:
                 new_file.write(data)
                 data = server_socket.recv(BUFFER_SIZE)
+    elif status_code == 301:
+        print(response)
+        data = server_socket.recv(BUFFER_SIZE)
+        while data:
+            print(data.decode())
+            data = server_socket.recv(BUFFER_SIZE)
     else:
         print(response)
         data = server_socket.recv(BUFFER_SIZE)
@@ -89,14 +96,16 @@ if __name__ == '__main__':
             server_port, file = _.split('/', 1)
             proxy_url = sys.argv[2]
             proxy_host, proxy_port = proxy_url.split(':')
+            main(server_host, server_port, file, proxy_host, proxy_port)
+        elif "-balancer" in sys.argv:
+            url = sys.argv[2]
+            server_host, _ = url.split(':')
+            server_port, file = _.split('/', 1)
+            main(server_host, server_port, file)
         else:
             url = sys.argv[1]
             server_host, _ = url.split(':')
             server_port, file = _.split('/', 1)
-
-        if proxy_host and proxy_port:
-            main(server_host, server_port, file, proxy_host, proxy_port)
-        else:
             main(server_host, server_port, file)
     except IndexError:
         print("Error: Please provide server name, port number and file.")
