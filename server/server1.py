@@ -77,6 +77,8 @@ def main():
 
         # Receive request from client
         request = client_socket.recv(BUFFER_SIZE).decode()
+        if not request:
+            continue
         split_request = request.split('\n')
 
         request_line = split_request[0]
@@ -129,7 +131,7 @@ Content-Type: {content_type}\r
 \r"""
                 response_body = file
         else:
-            response_header = """HTTP/1.1 404 Not Found\r\n\r"""
+            response_header = "HTTP/1.1 404 Not Found\r\n\r"
             response_body = "files/errors/404.html"
 
         # Send response
@@ -140,7 +142,8 @@ Content-Type: {content_type}\r
                 while data:
                     client_socket.send(data)
                     data = file.read(BUFFER_SIZE)
-        client_socket.shutdown(socket.SHUT_WR)
+        if response_header:
+            client_socket.shutdown(socket.SHUT_WR)
 
 
 if __name__ == '__main__':
