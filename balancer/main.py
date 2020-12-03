@@ -17,8 +17,8 @@ def main():
         req_info, server_info, _ = request.split('\n')
         file = req_info.split(' ')[1].lstrip('/')
         server_info = server_info.split(' ')[1]
-        server_host, server_port = server_info.split(':')
-        server_port = int(server_port)  # remove escape chars
+        server_host = server_info.split(':')[0]
+        server_port = 8000
         response_header = f"""HTTP/1.1 301 Moved Permanently\r
 Location: {server_host}:{server_port}/{file}\r
 \r"""
