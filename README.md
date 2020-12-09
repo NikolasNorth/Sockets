@@ -1,5 +1,7 @@
 # Sockets
 
+To run load balancer for **Assignment 4**, see sections below titled: "With Load Balancer".
+
 ## Description
 Sockets implements a simplified web server and web downloader client. In response to a request, the server reads the 
 contents of a named file and pushes it back over the same connection. Currently only GET requests using version 
@@ -26,7 +28,7 @@ The client will open a TCP connection to the load balancer. The client will issu
 request, the load balancer will run a 'performance test' on the servers. A simple transfer request will be made to each 
 server and the time to complete each request will be measured. After running the performance test, your load balancer 
 will rank the servers in terms of their transfer times. The number of client requests sent to different servers will be 
-proportional to its performance. The higher performing servers will recieve relatively more requests compared to the 
+proportional to its performance. The higher performing servers will receive relatively more requests compared to the 
 lower performing ones.
 
 When a client issues a request, the load balancer will select a server to handle the request depending on a sorting 
@@ -63,13 +65,18 @@ If the response is `200` then `index.html` should be found within `cache/files/`
 
 ### With Load Balancer
 #### 1. Start all servers
-- `python3 server/`
+- `cd server/`
+- `python3 server8000.py`
+- `python3 server8100.py`
+- `python3 server8200.py`
 
 #### 2. Start load balancer
-- `python3 balancer/`
+- `cd balancer/`
+- `python3 main.py`
 
 #### 3. Send request
-- `python3 client/main.py -balancer localhost:8000/index.html`
+- `cd client/`
+- `python3 main.py -balancer localhost:8000/index.html`
 
 ## GET Request Errors
 Currently the server only supports GET requests. Any other request will have a `501 Method Not Implemented` error 
