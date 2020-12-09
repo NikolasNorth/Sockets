@@ -65,18 +65,27 @@ If the response is `200` then `index.html` should be found within `cache/files/`
 
 ### With Load Balancer
 #### 1. Start all servers
+You can run an arbitrary number of servers simultaneously (assuming they are running on different ports). For each server 
+you are running, you must add its hostname and port number to `Sockets/balancer/config.json`.
+
+Currently, `Sockets/balancer/config.json` shows three servers running on ports, `8000`, `8001`, and `8002`. To start 
+these servers, run the following in three seperate terminal windows:
 - `cd server/`
-- `python3 server8000.py`
-- `python3 server8100.py`
-- `python3 server8200.py`
+- `python3 main.py HOST=localhost PORT=8000`
+- `python3 main.py HOST=localhost PORT=8001`
+- `python3 main.py HOST=localhost PORT=8002`
+
+**Note:** `HOST` argument is optional, defaults to `localhost`. For example, `python3 main.py PORT=8000` is equivalent 
+to `python3 main.py HOST=localhost PORT=8000`.
 
 #### 2. Start load balancer
 - `cd balancer/`
 - `python3 main.py`
+- Balancer is currently programmed to listen on port `8500`.
 
 #### 3. Send request
 - `cd client/`
-- `python3 main.py -balancer localhost:8000/index.html`
+- `python3 main.py -balancer localhost:8500/index.html`
 
 ## GET Request Errors
 Currently the server only supports GET requests. Any other request will have a `501 Method Not Implemented` error 
