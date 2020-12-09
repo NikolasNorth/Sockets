@@ -2,17 +2,16 @@
 
 This script allows the user to start a server and can be executed by the
 following:
-    `python3 server/server1.py`
+    `python3 server/server8000.py`
 
 This script requires python3 to be installed.
 """
 
 import socket
 import os
+import sys
 from datetime import datetime
 
-HOST = "localhost"
-PORT = 8000
 BUFFER_SIZE = 1024
 
 
@@ -45,7 +44,7 @@ def get_content_type(file_ext):
         return "text/html"
 
 
-def main():
+def main(host, port):
     """Main function of the script.
 
     TCP socket will be created and bound to the specified port number on host.
@@ -67,9 +66,9 @@ def main():
     """
     # Bind server to socket and listen for requests
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind((HOST, PORT))
+    server_socket.bind((host, port))
     server_socket.listen(1)
-    print(f"""Server listening on port {PORT}...""")
+    print(f"Server listening on port {port}...")
 
     while True:
         # Make TCP connection with client
@@ -147,4 +146,20 @@ Content-Type: {content_type}\r
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        hostname = 'localhost'
+        port_number = 0
+        args = sys.argv[1:]
+        for arg in args:
+            split_arg = arg.split('=')
+            if split_arg[0] == 'HOST':
+                hostname = split_arg[1]
+            elif split_arg[0] == 'PORT':
+                port_number = int(split_arg[1])
+            else:
+                raise ValueError(f'incorrect argument: {split_arg[0]}')
+        if not port_number:
+            raise ValueError('port number must be provided.')
+        main(hostname, port_number)
+    except ValueError as err:
+        print('ValueError:', err)
