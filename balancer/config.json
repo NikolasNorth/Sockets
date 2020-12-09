@@ -3,12 +3,12 @@
     {
       "id": 1,
       "host": "localhost",
-      "port": 10000
+      "port": 8000
     },
     {
       "id": 2,
       "host": "localhost",
-      "port": 10001
+      "port": 8100
     }
   ]
 }
