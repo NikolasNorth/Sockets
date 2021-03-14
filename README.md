@@ -1,7 +1,5 @@
 # Sockets
 
-To run load balancer for **Assignment 4**, see sections below titled: "With Load Balancer".
-
 ## Description
 Sockets implements a simplified web server and web downloader client. In response to a request, the server reads the 
 contents of a named file and pushes it back over the same connection. Currently only GET requests using version 
